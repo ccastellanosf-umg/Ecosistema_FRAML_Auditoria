@@ -78,3 +78,20 @@ El certificado es emitido por una autoridad de certificación pública (Google T
 El código se versiona en GitHub (`ccastellanosf-umg/Ecosistema_FRAML_Auditoria`, conectado a Vercel para el despliegue continuo) y se replica en Azure Repos (`https://dev.azure.com/scanele/_git/Ecosistema_FRAML_Auditoria`) para el control centralizado del proyecto. La rama `main` de Azure tiene una política que impide el push directo y el push forzado: los cambios se integran únicamente mediante Pull Request aprobado, lo que constituye un control de gestión de cambios. Azure Boards está vinculado a GitHub, por lo que los commits que incluyen `AB#<id>` quedan enlazados al work item correspondiente.
 
 En Vercel, el proyecto usa `framl-dashboard` como *Root Directory*, ya que el repositorio contiene los componentes de todo el equipo.
+
+## 4. Seguridad de la cadena de suministro
+
+**Control:** las dependencias de terceros (paquetes npm) se instalan de forma verificable y sin ejecutar código no autorizado.
+
+**Cómo se cumple:**
+
+1. **Bloqueo de scripts de instalación.** npm 11 no ejecuta los scripts `preinstall`/`postinstall` de los paquetes salvo que se aprueben explícitamente. Durante el build en Vercel se observa este control en acción: el script de `unrs-resolver` (dependencia de desarrollo de ESLint) queda bloqueado y la compilación finaliza correctamente sin él. Esto mitiga ataques en los que un paquete comprometido ejecuta código malicioso al instalarse.
+2. **Versiones fijadas con verificación de integridad.** `package-lock.json` está versionado y fija la versión exacta de cada dependencia junto con su hash de integridad (SHA-512), de modo que el build instala exactamente los mismos paquetes que se probaron.
+3. **Auditoría de vulnerabilidades conocidas.** `npm audit` no reporta vulnerabilidades conocidas en las dependencias.
+
+**Observación:** el build reporta que `eslint@9` ya no tiene soporte. Es una dependencia de desarrollo, requerida por `eslint-config-next@16.3.8`, que no se incluye en la aplicación desplegada. Se actualizará cuando Next.js publique una configuración compatible con ESLint 10.
+
+**Evidencias:**
+
+- [x] Log de build en Vercel con el aviso `install-scripts` (script bloqueado) y despliegue exitoso
+- [x] `npm audit` → `found 0 vulnerabilities` (2026-10-01)
