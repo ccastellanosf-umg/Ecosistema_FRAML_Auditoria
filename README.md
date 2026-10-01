@@ -12,5 +12,5 @@ Each component lives in its own top-level folder.
 
 ## Repositories
 
-- GitHub (main, connected to Vercel): https://github.com/sact28/Ecosistema_FRAML_Auditoria
+- GitHub (main, connected to Vercel): https://github.com/ccastellanosf-umg/Ecosistema_FRAML_Auditoria
 - Azure DevOps (mirror + Boards): https://dev.azure.com/scanele/_git/Ecosistema_FRAML_Auditoria
