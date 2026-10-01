@@ -20,10 +20,35 @@ Encabezados de endurecimiento adicionales: `X-Content-Type-Options: nosniff`, `X
 
 **Evidencias a adjuntar:**
 
-- [ ] URL del despliegue: `https://<pendiente>.vercel.app`
-- [ ] Captura del certificado TLS (emisor, vigencia, dominio)
-- [ ] Salida de `curl -sI` con el encabezado `Strict-Transport-Security`
-- [ ] Prueba de redirección: `curl -sI http://<dominio>.vercel.app` responde `308` hacia `https://`
+- [x] URL del despliegue: `https://ecosistema-framl-auditoria.vercel.app`
+- [ ] Captura del certificado TLS en el navegador (emisor, vigencia, dominio)
+- [x] Salida de `curl -sI` con el encabezado `Strict-Transport-Security`
+- [x] Prueba de redirección: `curl -sI http://ecosistema-framl-auditoria.vercel.app` responde `308` hacia `https://`
+
+**Resultados verificados (2026-10-01):**
+
+```text
+$ curl -sI https://ecosistema-framl-auditoria.vercel.app
+HTTP/2 200
+strict-transport-security: max-age=63072000; includeSubDomains; preload
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: strict-origin-when-cross-origin
+permissions-policy: camera=(), microphone=(), geolocation=()
+
+$ curl -sI http://ecosistema-framl-auditoria.vercel.app
+HTTP/1.0 308 Permanent Redirect
+Location: https://ecosistema-framl-auditoria.vercel.app/
+
+$ openssl s_client -connect ecosistema-framl-auditoria.vercel.app:443
+subject=CN=*.vercel.app
+issuer=C=US, O=Google Trust Services, CN=WR1
+notBefore=Aug 29 19:48:09 2026 GMT
+notAfter=Nov 27 19:48:08 2026 GMT
+Protocol: TLSv1.3, Cipher: TLS_AES_128_GCM_SHA256
+```
+
+El certificado es emitido por una autoridad de certificación pública (Google Trust Services) y Vercel lo renueva automáticamente antes de su vencimiento. La conexión negocia TLS 1.3.
 
 ## 2. Gestión de llaves
 
