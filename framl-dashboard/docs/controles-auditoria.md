@@ -21,7 +21,7 @@ Encabezados de endurecimiento adicionales: `X-Content-Type-Options: nosniff`, `X
 **Evidencias a adjuntar:**
 
 - [x] URL del despliegue: `https://ecosistema-framl-auditoria.vercel.app`
-- [ ] Captura del certificado TLS en el navegador (emisor, vigencia, dominio)
+- [x] Captura del certificado TLS en el navegador (emisor, vigencia, dominio)
 - [x] Salida de `curl -sI` con el encabezado `Strict-Transport-Security`
 - [x] Prueba de redirección: `curl -sI http://ecosistema-framl-auditoria.vercel.app` responde `308` hacia `https://`
 
@@ -49,6 +49,12 @@ Protocol: TLSv1.3, Cipher: TLS_AES_128_GCM_SHA256
 ```
 
 El certificado es emitido por una autoridad de certificación pública (Google Trust Services) y Vercel lo renueva automáticamente antes de su vencimiento. La conexión negocia TLS 1.3.
+
+**Capturas del navegador:**
+
+| Conexión segura | Detalle del certificado |
+|---|---|
+| ![Conexión segura](evidencias/01-conexion-segura.png) | ![Certificado TLS](evidencias/02-certificado-tls.png) |
 
 ## 2. Gestión de llaves
 
