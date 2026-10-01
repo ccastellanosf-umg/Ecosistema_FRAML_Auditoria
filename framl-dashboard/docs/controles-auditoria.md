@@ -44,4 +44,6 @@ Encabezados de endurecimiento adicionales: `X-Content-Type-Options: nosniff`, `X
 
 ## 3. Control de versiones
 
-El código se versiona en GitHub (repositorio conectado a Vercel para el despliegue continuo) y se replica en Azure DevOps (`https://dev.azure.com/scanele/_git/Ecosistema_FRAML_Auditoria`) para el control centralizado del proyecto.
+El código se versiona en GitHub (`sact28/Ecosistema_FRAML_Auditoria`, conectado a Vercel para el despliegue continuo) y cada `push` se replica en Azure Repos (`https://dev.azure.com/scanele/_git/Ecosistema_FRAML_Auditoria`) para el control centralizado del proyecto. Azure Boards está vinculado a GitHub, por lo que los commits que incluyen `AB#<id>` quedan enlazados al work item correspondiente.
+
+En Vercel, el proyecto usa `framl-dashboard` como *Root Directory*, ya que el repositorio contiene los componentes de todo el equipo.

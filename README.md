@@ -1,22 +1,16 @@
-# FRAML Dashboard
+# Ecosistema FRAML Auditoría
 
-BI frontend for the FRAML audit ecosystem (Phase 1). Built with Next.js, deployed on Vercel, reading synthetic data from Supabase.
+Course project (Security) — Phase 1. All data in this repository is 100% synthetic.
 
-## Setup
+## Structure
 
-```bash
-npm install
-cp .env.example .env.local   # fill in SUPABASE_URL and SUPABASE_ANON_KEY
-npm run dev
-```
+| Folder | Component | Owner |
+|---|---|---|
+| `framl-dashboard/` | BI frontend (Next.js on Vercel) | Cristian |
 
-## Scripts
+Each component lives in its own top-level folder.
 
-- `npm run dev` — local development server
-- `npm test` — unit tests (Vitest)
-- `npm run lint` — ESLint
-- `npm run build` — production build
+## Repositories
 
-## Security controls
-
-See [docs/controles-auditoria.md](docs/controles-auditoria.md): data protection in transit (TLS/HSTS) and key management (server-only environment variables, least-privilege key).
+- GitHub (main, connected to Vercel): https://github.com/sact28/Ecosistema_FRAML_Auditoria
+- Azure DevOps (mirror + Boards): https://dev.azure.com/scanele/_git/Ecosistema_FRAML_Auditoria
