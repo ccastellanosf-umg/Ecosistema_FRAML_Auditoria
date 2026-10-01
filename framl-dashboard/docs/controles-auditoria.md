@@ -70,7 +70,16 @@ El certificado es emitido por una autoridad de certificación pública (Google T
 **Evidencias a adjuntar:**
 
 - [ ] Captura de las variables en Vercel (con los valores ocultos)
-- [ ] Búsqueda en el repositorio sin coincidencias de llaves: `git grep -n "eyJ\|sb_secret_\|sb_publishable_"`
+- [x] Búsqueda de llaves en el código y en todo el historial de Git, sin coincidencias (2026-10-01):
+
+  ```text
+  $ git grep -nE "eyJ[A-Za-z0-9_-]{10,}|sb_secret_[A-Za-z0-9]|sb_publishable_[A-Za-z0-9]" -- . ':!*.test.ts' ':!*.md' ':!*package-lock.json'
+  (sin resultados)
+  $ git log --all -p | grep -E "eyJ[A-Za-z0-9_-]{20,}" | grep -v '"integrity"'
+  (sin resultados)
+  ```
+
+  Se excluyen las pruebas unitarias (usan llaves ficticias generadas en tiempo de ejecución) y los hashes de integridad de `package-lock.json`, que pueden contener la secuencia `eyJ` por coincidencia.
 - [ ] Salida de `npm test` con todas las pruebas aprobadas
 
 ## 3. Control de versiones
