@@ -1,15 +1,20 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { readSupabaseConfig } from "./config";
+import { parseTransactions, type Transaction } from "@/lib/transactions/summary";
 
 const DEFAULT_TABLE = "transacciones";
 
+// Data minimization: request only the columns the dashboard renders.
+const COLUMNS =
+  "id_transaccion, id_cliente, monto_txn, fecha_hora_txn, pais_contraparte, canal_tx, id_dispositivo";
+
 export type TransactionsResult =
-  | { status: "ok"; rows: Record<string, unknown>[] }
+  | { status: "ok"; transactions: Transaction[] }
   | { status: "not-configured"; detail: string }
   | { status: "error"; detail: string };
 
-export async function fetchTransactions(limit = 50): Promise<TransactionsResult> {
+export async function fetchTransactions(limit = 200): Promise<TransactionsResult> {
   const config = readSupabaseConfig(process.env);
   if (!config.ok) {
     const detail =
@@ -25,8 +30,12 @@ export async function fetchTransactions(limit = 50): Promise<TransactionsResult>
     auth: { persistSession: false },
   });
   const table = process.env.SUPABASE_TABLE?.trim() || DEFAULT_TABLE;
-  const { data, error } = await supabase.from(table).select("*").limit(limit);
+  const { data, error } = await supabase
+    .from(table)
+    .select(COLUMNS)
+    .order("fecha_hora_txn", { ascending: false })
+    .limit(limit);
 
   if (error) return { status: "error", detail: error.message };
-  return { status: "ok", rows: data ?? [] };
+  return { status: "ok", transactions: parseTransactions(data ?? []) };
 }
