@@ -80,7 +80,9 @@ El certificado es emitido por una autoridad de certificación pública (Google T
   ```
 
   Se excluyen las pruebas unitarias (usan llaves ficticias generadas en tiempo de ejecución) y los hashes de integridad de `package-lock.json`, que pueden contener la secuencia `eyJ` por coincidencia.
-- [ ] Salida de `npm test` con todas las pruebas aprobadas
+- [x] Salida de `npm test` con todas las pruebas aprobadas (2026-10-01): `Test Files 1 passed (1) · Tests 8 passed (8)`
+- [x] La llave no llega al navegador (2026-10-01): se descargaron el HTML y los 6 archivos JavaScript que sirve `https://ecosistema-framl-auditoria.vercel.app` (574 KB) y se buscaron `sb_publishable`, el identificador del proyecto Supabase y `supabase.co`, sin coincidencias. La conexión a Supabase ocurre únicamente en el servidor de Vercel.
+- [x] Verificación de RLS con la llave pública (2026-10-01): una consulta de lectura a `maestro_clientes` con la llave `publishable` devuelve 0 filas, por lo que los datos de clientes (incluido `ingreso_declarado`) no son accesibles desde el dashboard.
 
 ## 3. Control de versiones
 
