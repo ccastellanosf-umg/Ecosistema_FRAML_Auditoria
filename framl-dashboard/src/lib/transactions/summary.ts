@@ -23,7 +23,7 @@ export type Summary = {
 
 type Row = Record<string, unknown>;
 
-const text = (value: unknown, fallback = "Unknown") =>
+const text = (value: unknown, fallback = "Desconocido") =>
   typeof value === "string" && value.trim() ? value.trim() : fallback;
 
 export function parseTransactions(rows: Row[]): Transaction[] {

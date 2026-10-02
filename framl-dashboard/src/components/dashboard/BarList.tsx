@@ -49,7 +49,7 @@ export function BarList({ title, description, groups }: BarListProps) {
                 <span className="block font-medium text-primary">{group.label}</span>
                 <span className="block tabular-nums text-secondary">
                   {formatCurrency(group.total)} · {group.count}{" "}
-                  {group.count === 1 ? "transaction" : "transactions"} · {formatPercent(share)} of
+                  {group.count === 1 ? "transacción" : "transacciones"} · {formatPercent(share)} of
                   total
                 </span>
               </span>

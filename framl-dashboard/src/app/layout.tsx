@@ -13,14 +13,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FRAML Dashboard",
-  description: "BI dashboard for the FRAML audit ecosystem (synthetic data)",
+  title: "Dashboard FRAML",
+  description: "Dashboard de BI del ecosistema de auditoría FRAML (datos sintéticos)",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
-      lang="en"
+      lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>

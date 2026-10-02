@@ -5,8 +5,8 @@ export function TransactionsTable({ transactions }: { transactions: Transaction[
   return (
     <section className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4">
       <header>
-        <h2 className="text-base font-semibold text-primary">Transactions</h2>
-        <p className="text-sm text-secondary">Most recent first · times in Guatemala (UTC−6)</p>
+        <h2 className="text-base font-semibold text-primary">Transacciones</h2>
+        <p className="text-sm text-secondary">Más recientes primero · hora de Guatemala (UTC−6)</p>
       </header>
 
       <div className="overflow-x-auto">
@@ -14,12 +14,12 @@ export function TransactionsTable({ transactions }: { transactions: Transaction[
           <thead className="text-xs uppercase tracking-wide text-muted">
             <tr className="border-b border-border">
               <th className="py-2 pr-4 font-medium">ID</th>
-              <th className="py-2 pr-4 font-medium">Date</th>
-              <th className="py-2 pr-4 font-medium">Customer</th>
-              <th className="py-2 pr-4 font-medium">Channel</th>
-              <th className="py-2 pr-4 font-medium">Counterparty country</th>
-              <th className="py-2 pr-4 font-medium">Device</th>
-              <th className="py-2 text-right font-medium">Amount</th>
+              <th className="py-2 pr-4 font-medium">Fecha</th>
+              <th className="py-2 pr-4 font-medium">Cliente</th>
+              <th className="py-2 pr-4 font-medium">Canal</th>
+              <th className="py-2 pr-4 font-medium">País de contraparte</th>
+              <th className="py-2 pr-4 font-medium">Dispositivo</th>
+              <th className="py-2 text-right font-medium">Monto</th>
             </tr>
           </thead>
           <tbody>
@@ -38,7 +38,7 @@ export function TransactionsTable({ transactions }: { transactions: Transaction[
                 <td className="whitespace-nowrap py-2.5 pr-4 text-primary">
                   {tx.country}
                   {tx.country !== HOME_COUNTRY && (
-                    <span className="ml-2 text-xs text-muted">↗ cross-border</span>
+                    <span className="ml-2 text-xs text-muted">↗ transfronteriza</span>
                   )}
                 </td>
                 <td className="py-2.5 pr-4 font-mono text-xs text-muted">{tx.deviceId}</td>

@@ -19,10 +19,10 @@ export async function fetchTransactions(limit = 200): Promise<TransactionsResult
   if (!config.ok) {
     const detail =
       config.reason === "missing"
-        ? `Missing environment variables: ${config.missing.join(", ")}`
+        ? `Faltan variables de entorno: ${config.missing.join(", ")}`
         : config.reason === "insecure-url"
-          ? "SUPABASE_URL must use HTTPS"
-          : "Privileged keys are not allowed; use the anon/publishable key";
+          ? "SUPABASE_URL debe usar HTTPS"
+          : "No se permiten llaves privilegiadas; use la llave anon o publishable";
     return { status: "not-configured", detail };
   }
 

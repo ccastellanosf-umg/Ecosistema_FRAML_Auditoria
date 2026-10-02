@@ -44,10 +44,10 @@ describe("parseTransactions", () => {
     expect(parseTransactions(rows)).toEqual([]);
   });
 
-  it("labels missing country and channel as Unknown", () => {
+  it("labels missing country and channel as Desconocido", () => {
     const [parsed] = parseTransactions([{ id_transaccion: 1, monto_txn: 10 }]);
-    expect(parsed.country).toBe("Unknown");
-    expect(parsed.channel).toBe("Unknown");
+    expect(parsed.country).toBe("Desconocido");
+    expect(parsed.channel).toBe("Desconocido");
   });
 });
 
