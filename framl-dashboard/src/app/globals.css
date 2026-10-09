@@ -27,6 +27,8 @@
 }
 
 @theme inline {
+  --color-status-good: #0ca30c;
+  --color-status-critical: #d03b3b;
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-border: var(--border);
