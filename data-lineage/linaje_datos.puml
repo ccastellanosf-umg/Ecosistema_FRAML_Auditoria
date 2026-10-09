@@ -1,0 +1,97 @@
+@startuml linaje_datos
+' ==================================================================
+' Proyecto : Gobierno y calidad de datos para un ecosistema FRAML
+' Artefacto: Diagrama de linaje inicial (User Story 88)
+' Version  : 0.2 | Fecha: 2026-10-01
+' Base     : modelo del script Supabase (maestro_clientes, transacciones)
+'            y los 7 datos criticos preliminares del equipo.
+' Alcance  : datos 100 % sinteticos, uso academico. No representa
+'            sistemas, tablas ni reglas reales de ninguna entidad.
+' ==================================================================
+
+title Linaje de datos inicial: ecosistema FRAML\n<size:12>Origen > Transformación > Almacén FRAML > Consumo (datos sintéticos, uso académico)</size>
+
+left to right direction
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 12
+skinparam packageStyle rectangle
+skinparam roundCorner 8
+skinparam ArrowColor #546E7A
+skinparam ArrowFontSize 10
+skinparam ArrowFontColor #37474F
+skinparam LegendFontSize 11
+skinparam nodesep 35
+skinparam ranksep 60
+
+' ---------------------------- 1. ORIGEN ----------------------------
+package "1. ORIGEN" as P1 #E3F2FD {
+  component "Formulario de clientes" as FORM
+  database "Core transaccional\n(cajero / agencia)" as CORE
+  component "Canal digital\n(app móvil / web)" as CANAL
+  file "Catálogos de referencia\n(países ISO 3166, canales)" as CAT
+}
+
+' ------------------------ 2. TRANSFORMACION ------------------------
+package "2. TRANSFORMACIÓN" as P2 #FFF8E1 {
+  rectangle "**Staging**\nstg_clientes, stg_transacciones\ncarga cruda, sin restricciones\nagrega id_lote y fecha_carga\n[C1]" as STG
+  rectangle "**Estandarización**\n- trim y formato de texto\n- país y canal según catálogo\n- fecha_hora_txn a TIMESTAMPTZ\n- montos a NUMERIC(15,2)" as EST
+  rectangle "**Validación de calidad (DQ)**\ncompletitud, validez, oportunidad,\nconsistencia, integridad\n[C2]" as DQ
+}
+
+' ------------------------ 3. ALMACENAMIENTO ------------------------
+package "3. ALMACENAMIENTO (Supabase PostgreSQL)" as P3 #E8F5E9 {
+  database "**Almacén FRAML**\nmaestro_clientes\ntransacciones\nPK, FK, NOT NULL, CHECK\n[C5]" as FRAML
+  database "**dq_resultados**\nmétricas por regla" as DQR
+  database "**Cuarentena e incidencias**\nregistros rechazados\n[C3]" as CUA
+  database "**control_lotes**\nrecibidos, cargados,\nrechazados\n[C4]" as CTRL
+}
+
+' ---------------------------- 4. CONSUMO ---------------------------
+package "4. CONSUMO" as P4 #F3E5F5 {
+  component "Motor AML (simulado)\nmonto_txn vs ingreso_declarado,\npais_contraparte" as AML
+  component "Motor antifraude (simulado)\nid_dispositivo, canal_tx,\nfecha_hora_txn" as FRAUDE
+  component "Tablero FRAML\n(Next.js en Vercel)" as TAB
+}
+
+' ------------------------------ FLUJO ------------------------------
+FORM  --> STG    : id_cliente, nombre_ficticio,\ningreso_declarado
+CORE  --> STG    : id_cliente, monto_txn,\nfecha_hora_txn, pais_contraparte,\ncanal_tx, id_dispositivo
+CANAL --> STG    : transacciones digitales\n(mismos campos)
+CAT   --> EST    : dominios válidos
+
+STG   --> EST    : datos crudos
+EST   --> DQ     : datos estandarizados
+DQ    --> FRAML  : registros válidos
+DQ    --> CUA    : registros fallidos
+DQ    --> DQR    : resultado por regla
+DQ    ..> CTRL   : conteos por lote\n(recibido, cargado, rechazado)
+
+FRAML --> AML    : cliente + transacción\n(join por id_cliente)
+FRAML --> FRAUDE : transacciones
+FRAML --> TAB    : métricas de negocio
+DQR   --> TAB    : indicadores de calidad
+CUA   ..> TAB    : incidencias abiertas
+CTRL  ..> TAB    : reconciliación
+
+' ------------------- CONTROLES Y LINAJE POR DATO -------------------
+legend bottom left
+  **Puntos de control de auditoría**
+  [C1] Bitácora de carga: cada registro recibe id_lote y fecha_carga (base para medir oportunidad).
+  [C2] Cada regla tiene dimensión, umbral y responsable; su resultado queda en dq_resultados.
+  [C3] Ningún registro se descarta en silencio: va a cuarentena y abre incidencia al custodio.
+  [C4] Reconciliación por lote: recibidos = cargados + rechazados.
+  [C5] Controles preventivos en el almacén (PK, FK, NOT NULL, CHECK) y acceso mínimo por rol.
+
+  **Linaje por dato crítico (preliminar)**
+  |= Dato crítico |= Nace en |= Transformación |= Se almacena en |= Lo consume |= Si falla |
+  | id_cliente | Formulario de clientes | trim, validación de llave foránea | maestro_clientes, transacciones | AML, antifraude, tablero | transacción sin cliente, no se puede perfilar |
+  | ingreso_declarado | Formulario de clientes | a NUMERIC(15,2) | maestro_clientes | Motor AML | no se compara el monto contra el perfil |
+  | monto_txn | Core / canal digital | a NUMERIC(15,2) | transacciones | Motor AML, tablero | alertas por monto falsas u omitidas |
+  | fecha_hora_txn | Core / canal digital | a TIMESTAMPTZ (UTC-6) | transacciones | Motor antifraude, tablero | fallan reglas de velocidad y horario |
+  | pais_contraparte | Core / canal digital | homologación con catálogo de países | transacciones | Motor AML, tablero | no se detectan jurisdicciones de riesgo |
+  | canal_tx | Core / canal digital | homologación con catálogo de canales | transacciones | Motor antifraude, tablero | fallan reglas por canal |
+  | id_dispositivo | Canal digital / cajero | trim y mayúsculas | transacciones | Motor antifraude | no se detecta dispositivo nuevo o compartido |
+endlegend
+
+@enduml

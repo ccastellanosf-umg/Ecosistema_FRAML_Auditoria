@@ -7,6 +7,7 @@ Course project (Security) — Phase 1. All data in this repository is 100% synth
 | Folder | Component | Owner |
 |---|---|---|
 | `framl-dashboard/` | BI frontend (Next.js on Vercel) | Cristian |
+| `data-lineage/` | Data lineage diagram (PlantUML) | Walter |
 
 Each component lives in its own top-level folder.
 
