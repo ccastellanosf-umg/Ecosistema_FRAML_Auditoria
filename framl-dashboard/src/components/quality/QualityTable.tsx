@@ -49,7 +49,7 @@ export function QualityTable({ report, hasLoadDate, demoIds }: QualityTableProps
         <div>
           <h2 className="text-base font-semibold text-primary">Detalle por registro</h2>
           <p className="text-sm text-secondary">
-            Las celdas en rojo incumplen una regla; pasá el mouse para ver el motivo.
+            Las celdas en rojo incumplen una regla; pase el cursor sobre ellas para ver el motivo.
           </p>
         </div>
         <Legend />

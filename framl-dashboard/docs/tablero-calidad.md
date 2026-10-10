@@ -3,7 +3,7 @@
 Ruta: `https://ecosistema-framl-auditoria.vercel.app/calidad`
 Work item: User Story 96 — Construir la lógica visual del Control Detectivo
 
-El tablero evalúa cada registro de `transacciones` en tres dimensiones de calidad y marca en rojo las celdas que incumplen una regla. Es un **control detectivo**: no impide que entren datos erróneos (eso lo hacen los controles preventivos de la base de datos), sino que los **detecta y los hace visibles**.
+El tablero evalúa cada registro de `transacciones` con las reglas de las fichas del catálogo, las agrupa en cuatro dimensiones de calidad (completitud, validez, oportunidad e integridad referencial) y marca en rojo las celdas que incumplen una regla. Es un **control detectivo**: no impide que entren datos erróneos (eso lo hacen los controles preventivos de la base de datos), sino que los **detecta y los hace visibles**.
 
 ## Reglas evaluadas (fichas del catálogo)
 
