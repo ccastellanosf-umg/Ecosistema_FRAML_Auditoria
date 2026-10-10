@@ -2,13 +2,16 @@
 ' ==================================================================
 ' Proyecto : Gobierno y calidad de datos para un ecosistema FRAML
 ' Artefacto: Diagrama de linaje (User Stories 88 y 98)
-' Version  : 1.1 | Fecha: 2026-10-09
-' Cambios  : refleja lo implementado hoy (BD en Supabase y tablero
-'            /calidad) y separa lo pendiente o propuesto.
+' Version  : 1.2 | Fecha: 2026-10-09
+' Cambios  : v1.1 separo lo implementado de lo pendiente o propuesto.
+'            v1.2 se alinea con el tablero /calidad (reglas version 1.2.0,
+'            US 96): reglas con ID, umbral y estado, evidencia en CSV,
+'            FEC-03 a 15 min, DIS-01 y DIS-02 segun las fichas.
 ' Base     : catalogo y fichas de datos criticos; script SQL de
 '            Supabase; framl-dashboard/docs/tablero-calidad.md y
-'            src/lib/quality/rules.ts; documento "Revision de
-'            consistencia catalogo vs. tablero" (hallazgos D-01 a D-13).
+'            tablero /calidad revisado el 2026-10-09 (reglas v1.2.0);
+'            documento "Revision de consistencia catalogo vs. tablero"
+'            (hallazgos D-01 a D-13).
 ' Convencion: linea solida = implementado hoy
 '             linea punteada gris = pendiente o propuesto
 ' Contenido: 2 diagramas en este archivo
@@ -19,7 +22,7 @@
 '            sistemas, tablas ni reglas reales de ninguna entidad.
 ' ==================================================================
 
-title Linaje de datos: ecosistema FRAML (vista general, v1.1)\n<size:12>Línea sólida: implementado hoy | Línea punteada gris: pendiente o propuesto (datos sintéticos, uso académico)</size>
+title Linaje de datos: ecosistema FRAML (vista general, v1.2)\n<size:12>Línea sólida: implementado hoy | Línea punteada gris: pendiente o propuesto (datos sintéticos, uso académico)</size>
 
 left to right direction
 skinparam shadowing false
@@ -52,7 +55,7 @@ package "2. TRANSFORMACIÓN (propuesto, no implementado)" as P2 #FAFAFA;line:9E9
 ' ------------------------ 3. ALMACENAMIENTO ------------------------
 package "3. ALMACÉN FRAML: Supabase PostgreSQL (custodio: Ingeniero de datos / TI)" as P3 #E8F5E9 {
   database "**maestro_clientes**\nid_cliente BIGINT PK\ningreso_declarado NOT NULL\n[P1]" as MC
-  database "**transacciones**\nPK, FK a maestro_clientes,\nNOT NULL, CHECK monto > 0\nfecha_carga: <color:#EF6C00>pendiente</color>\n[P1]" as TX
+  database "**transacciones**\nPK, FK a maestro_clientes,\nNOT NULL, CHECK monto > 0\nfecha_carga: <color:#EF6C00>pendiente</color>\n(filas actuales: carga histórica)\n[P1]" as TX
   database "**vista clientes_ids**\nsolo id_cliente\n<size:10>(pendiente, script documentado)</size>\n[S1]" as VIEW #FFFFFF;line:9E9E9E;line.dashed;text:757575
   database "**dq_resultados**\nevidencia por ejecución\n<size:10>(propuesto)</size>" as DQR #FFFFFF;line:9E9E9E;line.dashed;text:757575
   database "**Cuarentena e incidencias**\n<size:10>(propuesto)</size>" as CUA #FFFFFF;line:9E9E9E;line.dashed;text:757575
@@ -61,7 +64,7 @@ package "3. ALMACÉN FRAML: Supabase PostgreSQL (custodio: Ingeniero de datos / 
 
 ' ---------------------------- 4. CONSUMO ---------------------------
 package "4. CONSUMO" as P4 #F3E5F5 {
-  component "**Tablero de calidad /calidad**\nNext.js en Vercel\nevalúa las reglas al abrir la página\n(control detectivo) [D1]\ndominios: listas fijas en rules.ts\nresultados no se guardan\nmodo demo ?demo=1: 5 registros\ncon errores, solo en memoria" as TABC
+  component "**Tablero de calidad /calidad**\nNext.js en Vercel\n14 reglas del catálogo (v1.2.0) [D1]\nresultado por regla: ID, umbral y estado\nevidencia descargable en CSV [E1]\nmodo demo ?demo=1: 6 registros\ncon errores, solo en memoria" as TABC
   component "**Tablero de transacciones /**\nmétricas de negocio" as TABN
   component "Motor AML\n<size:10>Cumplimiento (conceptual)</size>" as AML #FFFFFF;line:9E9E9E;line.dashed;text:757575
   component "Motor antifraude\n<size:10>Prevención de Fraude (conceptual)</size>" as FRAUDE #FFFFFF;line:9E9E9E;line.dashed;text:757575
@@ -94,11 +97,13 @@ TX    -[#9E9E9E,dashed]-> FRAUDE
 legend bottom left
   **Controles implementados hoy**
   [P1] Preventivo: restricciones en la BD (PK, FK, NOT NULL, CHECK). Rechazan datos erróneos al insertar.
-  [D1] Detectivo: reglas de completitud, validez y oportunidad en el tablero /calidad. Varias difieren del catálogo (hallazgos D-01 a D-13).
+  [D1] Detectivo: 14 de las 22 reglas del catálogo en el tablero /calidad (versión 1.2.0), evaluadas al abrir la página. Una regla No evaluable nunca se reporta como cumplida.
+  [E1] Evidencia: CSV descargable con una línea por regla y por dimensión, con fecha de ejecución y versión de las reglas.
   [S1] Mínimo privilegio: la llave pública no ve nombre ni ingreso; la vista clientes_ids expondrá solo id_cliente (pendiente).
   [S2] Datos en tránsito: TLS, redirección a HTTPS y HSTS en Vercel (controles-auditoria.md).
-  **Pendientes o propuestos:** fecha_carga (base de FEC-03), vista clientes_ids, staging y estandarización, catálogos versionados,
-  dq_resultados (registro común de evidencia), cuarentena e incidencias, y reconciliación por lote.
+  **Pendientes:** fecha_carga sin default para las filas actuales (FEC-03) y vista clientes_ids (CLI-04), a cargo del Ingeniero de datos 1.
+  **Por decidir:** formato de cliente, país y canal (D-01 a D-03). **Propuestos:** staging y estandarización, catálogos versionados,
+  dq_resultados, cuarentena e incidencias, y reconciliación por lote.
 
   **Responsables por dato crítico**
   |= Dato crítico |= Propietario |= Criticidad |= Consumidor principal |
@@ -117,15 +122,15 @@ endlegend
 
 @startuml linaje_detalle
 ' ==================================================================
-' Diagrama 2: ruta de cada dato critico y estado de sus reglas (v1.1)
+' Diagrama 2: ruta de cada dato critico y estado de sus reglas (v1.2)
 ' Columnas: Origen > Carga > Almacen (hoy) > Validacion en tablero >
 '           Consumo
-' Estado de regla: en tablero / difiere / pendiente
+' Estado de regla: en tablero / por decidir / pendiente
 ' Referencias D-xx: documento "Revision de consistencia catalogo vs.
 '                   tablero" (2026-10-09)
 ' ==================================================================
 
-title Linaje detallado por dato crítico: ecosistema FRAML (v1.1)\n<size:12>Ruta de cada campo desde su origen hasta su consumo y estado de sus reglas (datos sintéticos, uso académico)</size>
+title Linaje detallado por dato crítico: ecosistema FRAML (v1.2)\n<size:12>Ruta de cada campo desde su origen hasta su consumo y estado de sus reglas en el tablero (reglas v1.2.0, datos sintéticos, uso académico)</size>
 
 left to right direction
 skinparam shadowing false
@@ -140,8 +145,9 @@ skinparam nodesep 14
 skinparam ranksep 40
 
 !$OK = "<color:#2E7D32>**en tablero**</color>"
-!$DIF = "<color:#C62828>**difiere**</color>"
+!$DEC = "<color:#1565C0>**por decidir**</color>"
 !$PEN = "<color:#EF6C00>**pendiente**</color>"
+!$DIF = "<color:#C62828>**difiere**</color>"
 
 ' Nota: con 'left to right direction' PlantUML apila los grupos de abajo
 ' hacia arriba; por eso las filas se declaran en orden inverso y el
@@ -152,7 +158,7 @@ package "ID_DISPOSITIVO  |  criticidad: Media  |  propietario: Dueño de canales
   rectangle "Canal digital: obligatorio\nen APP_MOVIL y WEB; puede\nvenir nulo de AGENCIA y CAJERO" as O7 #E3F2FD
   rectangle "Hoy: INSERT directo (script SQL)\n<color:#757575>Propuesto: UPPER y TRIM</color>" as T7 #FFF8E1
   rectangle "transacciones.id_dispositivo\nVARCHAR(150), permite nulo\n$DIF catálogo VARCHAR(64)" as A7 #E8F5E9
-  rectangle "DIS-01 Completitud condicional: $DIF (exige siempre, D-05)\nDIS-02 Validez de formato: $DIF (solo DEV-MOB, DEV-PC, ATM, D-04)\nDIS-03 Consistencia con origen: $PEN (D-11)" as V7 #FFE0B2
+  rectangle "DIS-01 Presente en App móvil y Web, 100 %: $OK\nDIS-02 A-Z, 0-9 y guion, 1 a 64, 100 %: $OK\nDIS-03 Consistencia con origen: $PEN (fuera del tablero, D-11)" as V7 #FFE0B2
   rectangle "Tableros / y /calidad\n<color:#757575>Motor antifraude (conceptual)</color>" as C7 #F3E5F5
 }
 O7 --> T7
@@ -164,8 +170,8 @@ V7 --> C7
 package "CANAL_TXN  |  criticidad: Media  |  propietario: Dueño de canales" as R6 #FAFAFA {
   rectangle "Core transaccional: AGENCIA, CAJERO\nCanal digital: APP_MOVIL, WEB" as O6 #E3F2FD
   rectangle "Hoy: INSERT directo (script SQL)\n<color:#757575>Propuesto: equivalencias con cat_canales</color>" as T6 #FFF8E1
-  rectangle "transacciones.canal_tx\nVARCHAR(50), NOT NULL\nApp móvil, Web, Cajero\n$DIF catálogo APP_MOVIL, WEB, AGENCIA, CAJERO" as A6 #E8F5E9
-  rectangle "CAN-01 Completitud: $OK\nCAN-02 Validez de dominio: $DIF (sin AGENCIA, D-03)\nCAN-03 Consistencia con origen: $PEN (D-11)" as V6 #FFE0B2
+  rectangle "transacciones.canal_tx\nVARCHAR(50), NOT NULL\nApp móvil, Web, Cajero\n$DEC catálogo APP_MOVIL, WEB, AGENCIA, CAJERO (D-03)" as A6 #E8F5E9
+  rectangle "CAN-01 Presente, 100 %: $OK\nCAN-02 En catálogo de canales, 100 %: $DEC\n(hoy valida App móvil, Web y Cajero, D-03)\nCAN-03 Consistencia con origen: $PEN (fuera del tablero, D-11)" as V6 #FFE0B2
   rectangle "Tableros / y /calidad\n<color:#757575>Motor antifraude (conceptual)</color>" as C6 #F3E5F5
 }
 O6 --> T6
@@ -177,8 +183,8 @@ V6 --> C6
 package "INGRESO_DECLARADO  |  criticidad: Alta  |  propietario: Dueño de datos de clientes" as R5 #FAFAFA {
   rectangle "Formulario de clientes\ningreso mensual en quetzales" as O5 #E3F2FD
   rectangle "Hoy: INSERT directo (script SQL)\n<color:#757575>Propuesto: CAST a NUMERIC(18,2),</color>\n<color:#757575>NULL se conserva (dato faltante)</color>" as T5 #FFF8E1
-  rectangle "maestro_clientes.ingreso_declarado\nNUMERIC(15,2), NOT NULL, CHECK >= 0\n$DIF catálogo permite NULL y (18,2)" as A5 #E8F5E9
-  rectangle "ING-01 Completitud: $PEN (NOT NULL impide probarla, D-12)\nING-02 Validez: $PEN (D-11)\nING-03 Consistencia con origen: $PEN (D-11)\nNo se expone a la llave pública (mínimo privilegio)" as V5 #FFE0B2
+  rectangle "maestro_clientes.ingreso_declarado\nNUMERIC(15,2), NOT NULL, CHECK >= 0\n$DIF catálogo permite NULL y (18,2) (D-12)" as A5 #E8F5E9
+  rectangle "ING-01 Completitud, 99 %: $PEN (NOT NULL impide probarla, D-12)\nING-02 Validez, 100 %: $PEN (fuera del tablero, D-11)\nING-03 Consistencia con origen: $PEN (fuera del tablero, D-11)\nNo se expone a la llave pública (mínimo privilegio)" as V5 #FFE0B2
   rectangle "No llega a los tableros\n<color:#757575>Motor AML (conceptual)</color>" as C5 #F3E5F5
 }
 O5 --> T5
@@ -190,8 +196,8 @@ V5 --> C5
 package "PAIS_CONTRAPARTE  |  criticidad: Alta  |  propietario: Dueño de pagos" as R4 #FAFAFA {
   rectangle "Core transaccional\ny Canal digital\npaís de la contraparte destinataria" as O4 #E3F2FD
   rectangle "Hoy: INSERT directo (script SQL)\n<color:#757575>Propuesto: homologar a código ISO</color>\n<color:#757575>con cat_paises</color>" as T4 #FFF8E1
-  rectangle "transacciones.pais_contraparte\nVARCHAR(100), NOT NULL\nnombre del país (ej. Guatemala)\n$DIF catálogo CHAR(2) ISO (ej. GT)" as A4 #E8F5E9
-  rectangle "PAI-01 Completitud: $OK\nPAI-02 Validez en catálogo: $DIF (lista de 31 nombres, D-02)\nPAI-03 Consistencia con origen: $PEN (D-11)" as V4 #FFE0B2
+  rectangle "transacciones.pais_contraparte\nVARCHAR(100), NOT NULL\nnombre del país (ej. Guatemala)\n$DEC catálogo CHAR(2) ISO, ej. GT (D-02)" as A4 #E8F5E9
+  rectangle "PAI-01 Presente, 100 %: $OK\nPAI-02 En catálogo de países, 100 %: $DEC\n(hoy valida nombres de país, D-02)\nPAI-03 Consistencia con origen: $PEN (fuera del tablero, D-11)" as V4 #FFE0B2
   rectangle "Tableros / y /calidad\n<color:#757575>Motor AML (conceptual)</color>" as C4 #F3E5F5
 }
 O4 --> T4
@@ -202,9 +208,9 @@ V4 --> C4
 ' --------------------------- FECHA_HORA_TXN ------------------------
 package "FECHA_HORA_TXN  |  criticidad: Alta  |  propietario: Dueño de transacciones" as R3 #FAFAFA {
   rectangle "Core transaccional\ny Canal digital\nISO 8601 con zona horaria" as O3 #E3F2FD
-  rectangle "Hoy: INSERT directo (script SQL)\nfecha_carga: $PEN (D-08)\n<color:#757575>Propuesto: fecha_carga al recibir</color>" as T3 #FFF8E1
-  rectangle "transacciones.fecha_hora_txn\nTIMESTAMPTZ, NOT NULL" as A3 #E8F5E9
-  rectangle "FEC-01 Completitud: $OK\nFEC-02 Validez: $OK fecha inválida; fecha futura $DIF (D-07)\nFEC-03 Oportunidad 15 min, 99 %: $PEN (sin fecha_carga; tablero usa 24 h, D-06)" as V3 #FFE0B2
+  rectangle "Hoy: INSERT directo (script SQL)\nfecha_carga: $PEN en la BD (D-08)\nfilas actuales: carga histórica" as T3 #FFF8E1
+  rectangle "transacciones.fecha_hora_txn\nTIMESTAMPTZ, NOT NULL\n+ fecha_carga (pendiente)" as A3 #E8F5E9
+  rectangle "FEC-01 Presente, 100 %: $OK\nFEC-02 Real, con zona y no posterior a la carga, 100 %: $OK\nFEC-03 Carga en 15 min o menos, 99 %: $OK\n(datos reales: No aplica hasta crear fecha_carga)" as V3 #FFE0B2
   rectangle "Tableros / y /calidad\n<color:#757575>Motor antifraude y AML (conceptual)</color>" as C3 #F3E5F5
 }
 O3 --> T3
@@ -216,8 +222,8 @@ V3 --> C3
 package "MONTO_TXN  |  criticidad: Muy alta  |  propietario: Dueño de transacciones" as R2 #FAFAFA {
   rectangle "Core transaccional\ny Canal digital\nmonto en quetzales" as O2 #E3F2FD
   rectangle "Hoy: INSERT directo (script SQL)\n<color:#757575>Propuesto: CAST a NUMERIC(18,2)</color>\n<color:#757575>con escala validada antes</color>" as T2 #FFF8E1
-  rectangle "transacciones.monto_txn\nNUMERIC(15,2), NOT NULL, CHECK > 0\n$DIF catálogo NUMERIC(18,2)" as A2 #E8F5E9
-  rectangle "MON-01 Completitud: $OK\nMON-02 Validez mayor que 0: $OK; escala sin redondeo: $PEN (D-11)\nMON-03 Consistencia con origen: $PEN (D-11)" as V2 #FFE0B2
+  rectangle "transacciones.monto_txn\nNUMERIC(15,2), NOT NULL, CHECK > 0\n$DIF catálogo NUMERIC(18,2) (D-12)" as A2 #E8F5E9
+  rectangle "MON-01 Presente, 100 %: $OK\nMON-02 Mayor que 0 y hasta 2 decimales, 100 %: $OK\nMON-03 Consistencia con origen: $PEN (fuera del tablero, D-11)" as V2 #FFE0B2
   rectangle "Tableros / y /calidad\n<color:#757575>Motor AML y antifraude (conceptual)</color>" as C2 #F3E5F5
 }
 O2 --> T2
@@ -229,8 +235,8 @@ V2 --> C2
 package "ID_CLIENTE  |  criticidad: Muy alta  |  propietario: Dueño de datos de clientes" as R1 #FAFAFA {
   rectangle "Formulario de clientes\nnace en el alta del cliente y viaja\ncomo referencia en cada transacción" as O1 #E3F2FD
   rectangle "Hoy: INSERT directo (script SQL),\nID generado por la BD (IDENTITY)\n<color:#757575>Propuesto: UPPER y TRIM</color>" as T1 #FFF8E1
-  rectangle "maestro_clientes.id_cliente BIGINT PK\ntransacciones.id_cliente FK\n$DIF catálogo VARCHAR(20), ej. CLI000123" as A1 #E8F5E9
-  rectangle "CLI-01 Completitud: $OK\nCLI-02 Validez de formato: $DIF (entero positivo, D-01)\nCLI-03 Sin duplicados: $PEN como regla; hoy lo impide la PK\nCLI-04 Existe en el maestro: $PEN (vista clientes_ids, D-09)" as V1 #FFE0B2
+  rectangle "maestro_clientes.id_cliente BIGINT PK\ntransacciones.id_cliente FK\n$DEC catálogo VARCHAR(20), ej. CLI000123 (D-01)" as A1 #E8F5E9
+  rectangle "CLI-01 Presente, 100 %: $OK\nCLI-02 1 a 20 caracteres, A-Z y 0-9, 100 %: $OK\nCLI-03 Sin duplicados: $PEN (fuera del tablero; hoy lo impide la PK)\nCLI-04 Existe en el maestro, 100 %: $PEN (No evaluable: falta clientes_ids, D-09)" as V1 #FFE0B2
   rectangle "Tableros / y /calidad\n<color:#757575>Motor AML y antifraude (conceptual)</color>" as C1 #F3E5F5
 }
 O1 --> T1
@@ -243,7 +249,7 @@ package "Etapas del linaje" as HP #FFFFFF {
   rectangle "<color:white>**1. ORIGEN**</color>" as H1 #37474F
   rectangle "<color:white>**2. CARGA**</color>" as H2 #37474F
   rectangle "<color:white>**3. ALMACÉN FRAML (hoy)**</color>\n<color:white><size:10>Supabase, custodio: Ingeniero de datos / TI</size></color>" as H3 #37474F
-  rectangle "<color:white>**4. VALIDACIÓN EN TABLERO /calidad**</color>\n<color:white><size:10>regla del catálogo: estado</size></color>" as H4 #37474F
+  rectangle "<color:white>**4. VALIDACIÓN EN TABLERO /calidad**</color>\n<color:white><size:10>regla del catálogo y umbral: estado</size></color>" as H4 #37474F
   rectangle "<color:white>**5. CONSUMO**</color>" as H5 #37474F
 }
 H1 -[#37474F]-> H2
@@ -252,11 +258,12 @@ H3 -[#37474F]-> H4
 H4 -[#37474F]-> H5
 
 legend bottom left
-  **Estado de cada regla del catálogo:** <color:#2E7D32>**en tablero**</color> = el tablero la evalúa como dice la ficha | <color:#C62828>**difiere**</color> = la BD o el tablero la implementan distinto | <color:#EF6C00>**pendiente**</color> = no se evalúa todavía.
-  Texto gris = propuesto o conceptual, no implementado. Las referencias D-xx corresponden al documento "Revisión de consistencia: catálogo vs. tablero" (9-oct-2026).
-  **Para todas las reglas en tablero:** se evalúan al abrir /calidad, todavía sin ID ni umbral por regla (D-10) y sin guardar evidencia por ejecución (D-13).
-  **Control preventivo:** las restricciones NOT NULL y CHECK de la BD rechazan los errores al insertar; por eso los fallos se demuestran con el modo demo (?demo=1), que no escribe en la BD.
-  Los umbrales son decisiones académicas del MVP, no requisitos institucionales ni regulatorios.
+  **Estado de cada regla:** <color:#2E7D32>**en tablero**</color> = el tablero la evalúa según la ficha | <color:#1565C0>**por decidir**</color> = la evalúa con los valores actuales de la BD mientras el equipo decide el formato (D-01 a D-03)
+  | <color:#EF6C00>**pendiente**</color> = fuera del tablero o No evaluable todavía | <color:#C62828>**difiere**</color> = el tipo en la BD no coincide con la ficha.
+  **Tablero /calidad (reglas v1.2.0):** 14 de 22 reglas; resultado = conformes / aplicables, comparado contra el umbral; estados Cumple, No cumple, No aplica y No evaluable;
+  evidencia descargable en CSV con fecha de ejecución y versión de las reglas. Texto gris = propuesto o conceptual, no implementado.
+  **Control preventivo:** las restricciones NOT NULL y CHECK de la BD rechazan los errores al insertar; por eso los fallos se demuestran con el modo demo (?demo=1, 6 registros), que no escribe en la BD.
+  Referencias D-xx: documento "Revisión de consistencia: catálogo vs. tablero" (9-oct-2026). Los umbrales son decisiones académicas del MVP, no requisitos institucionales ni regulatorios.
 endlegend
 
 @enduml
