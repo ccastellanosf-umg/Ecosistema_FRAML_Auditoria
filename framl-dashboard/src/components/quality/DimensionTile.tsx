@@ -1,6 +1,6 @@
 import type { DimensionScore } from "@/lib/quality/rules";
 import { formatPercent } from "@/components/dashboard/format";
-import { DIMENSION_LABELS, DIMENSION_QUESTIONS } from "./labels";
+import { DIMENSION_LABELS, DIMENSION_QUESTIONS } from "@/lib/quality/labels";
 
 export function DimensionTile({ score }: { score: DimensionScore }) {
   const ok = score.passed === score.total;

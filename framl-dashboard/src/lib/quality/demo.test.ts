@@ -19,4 +19,9 @@ describe("buildDemoRows", () => {
     const dimensions = new Set(rows.flatMap((row) => evaluateRow(row, ctx).map((i) => i.dimension)));
     expect([...dimensions].sort()).toEqual([...DIMENSIONS].sort());
   });
+
+  it("includes a record loaded outside the allowed delay", () => {
+    const messages = rows.flatMap((row) => evaluateRow(row, ctx).map((i) => i.message));
+    expect(messages).toContain("Cargado con más de 24 h de retraso");
+  });
 });

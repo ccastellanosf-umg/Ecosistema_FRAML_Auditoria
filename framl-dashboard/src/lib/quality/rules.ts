@@ -13,7 +13,7 @@ export type QualityContext = {
 
 export type DimensionScore = { dimension: Dimension; passed: number; total: number; rate: number };
 
-export type RuleFailure = { dimension: Dimension; message: string; count: number };
+export type RuleFailure = { dimension: Dimension; message: string; count: number; rowIds: number[] };
 
 export type QualityReport = {
   rows: { row: Row; issues: Issue[] }[];
@@ -30,10 +30,12 @@ export const REQUIRED_FIELDS = [
   "fecha_hora_txn",
   "pais_contraparte",
   "canal_tx",
-  "id_dispositivo",
 ] as const;
 
 export const ALLOWED_CHANNELS = ["App móvil", "Web", "Cajero"];
+
+// DIS-01: the device id is mandatory only for digital channels.
+const DEVICE_REQUIRED_CHANNELS = ["App móvil", "Web"];
 
 const VALID_COUNTRIES = [
   "Alemania", "Argentina", "Belice", "Bolivia", "Brasil", "Canadá", "Chile", "China",
@@ -70,13 +72,19 @@ export function evaluateRow(row: Row, ctx: QualityContext): Issue[] {
     if (isMissing(row[field])) flag(field, "completeness", "Campo obligatorio vacío");
   }
 
+  // Not evaluable when the channel is missing or invalid.
+  const channel = isMissing(row.canal_tx) ? null : String(row.canal_tx).trim();
+  if (channel && DEVICE_REQUIRED_CHANNELS.includes(channel) && isMissing(row.id_dispositivo)) {
+    flag("id_dispositivo", "completeness", "Dispositivo obligatorio en canales digitales");
+  }
+
   if (!isMissing(row.monto_txn)) {
     const amount = Number(row.monto_txn);
     if (!Number.isFinite(amount)) flag("monto_txn", "validity", "El monto no es numérico");
     else if (amount <= 0) flag("monto_txn", "validity", "El monto debe ser mayor que 0");
   }
 
-  if (!isMissing(row.canal_tx) && !ALLOWED_CHANNELS.includes(String(row.canal_tx).trim())) {
+  if (channel && !ALLOWED_CHANNELS.includes(channel)) {
     flag("canal_tx", "validity", "Canal no permitido");
   }
 
@@ -102,22 +110,22 @@ export function evaluateRow(row: Row, ctx: QualityContext): Issue[] {
     flag("fecha_hora_txn", "validity", "Fecha inválida");
   }
 
-  if (occurredAt && occurredAt.getTime() - ctx.now.getTime() > FUTURE_TOLERANCE_MS) {
-    flag("fecha_hora_txn", "timeliness", "Fecha en el futuro");
+  // Records without fecha_carga are historical loads: timeliness is not evaluated (FEC-03).
+  const loadedAt = isMissing(row.fecha_carga) ? null : parseDate(row.fecha_carga);
+  if (!isMissing(row.fecha_carga) && !loadedAt) {
+    flag("fecha_carga", "validity", "Fecha de carga inválida");
   }
 
-  if (!isMissing(row.fecha_carga)) {
-    const loadedAt = parseDate(row.fecha_carga);
-    if (!loadedAt) {
-      flag("fecha_carga", "validity", "Fecha de carga inválida");
-    } else if (occurredAt) {
-      const delay = loadedAt.getTime() - occurredAt.getTime();
-      if (delay < 0) {
-        flag("fecha_carga", "timeliness", "Cargado antes de que ocurriera la transacción");
-      } else if (delay > ctx.maxLoadDelayHours * HOUR_MS) {
-        flag("fecha_carga", "timeliness", `Cargado con más de ${ctx.maxLoadDelayHours} h de retraso`);
-      }
+  // FEC-02 (validity): a transaction cannot happen after it was loaded,
+  // or after "now" when the load date is unknown.
+  if (occurredAt && loadedAt) {
+    if (occurredAt.getTime() > loadedAt.getTime()) {
+      flag("fecha_hora_txn", "validity", "Fecha posterior a la fecha de carga");
+    } else if (loadedAt.getTime() - occurredAt.getTime() > ctx.maxLoadDelayHours * HOUR_MS) {
+      flag("fecha_carga", "timeliness", `Cargado con más de ${ctx.maxLoadDelayHours} h de retraso`);
     }
+  } else if (occurredAt && occurredAt.getTime() - ctx.now.getTime() > FUTURE_TOLERANCE_MS) {
+    flag("fecha_hora_txn", "validity", "Fecha en el futuro");
   }
 
   return issues;
@@ -133,11 +141,12 @@ export function evaluateQuality(rows: Row[], ctx: QualityContext): QualityReport
   });
 
   const failures = new Map<string, RuleFailure>();
-  for (const { issues } of evaluated) {
+  for (const { row, issues } of evaluated) {
     for (const { dimension, message } of issues) {
       const key = `${dimension}|${message}`;
-      const failure = failures.get(key) ?? { dimension, message, count: 0 };
+      const failure = failures.get(key) ?? { dimension, message, count: 0, rowIds: [] };
       failure.count += 1;
+      failure.rowIds.push(Number(row.id_transaccion));
       failures.set(key, failure);
     }
   }

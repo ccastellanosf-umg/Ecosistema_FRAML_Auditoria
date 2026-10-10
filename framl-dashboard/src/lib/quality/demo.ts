@@ -49,5 +49,15 @@ export function buildDemoRows(now: Date): Record<string, unknown>[] {
       canal_tx: "Cajero",
       id_dispositivo: "ATM-GT-905",
     },
+    {
+      id_transaccion: 9006,
+      id_cliente: 6,
+      monto_txn: 2750,
+      fecha_hora_txn: daysFromNow(-4),
+      pais_contraparte: "Colombia",
+      canal_tx: "App móvil",
+      id_dispositivo: "DEV-MOB-906",
+      fecha_carga: daysFromNow(-2),
+    },
   ];
 }

@@ -1,8 +1,14 @@
 import type { Issue, QualityReport } from "@/lib/quality/rules";
 import { formatCurrency, formatDateTime } from "@/components/dashboard/format";
-import { DIMENSION_LABELS } from "./labels";
+import { DIMENSION_LABELS } from "@/lib/quality/labels";
 
-type Column = { field: string; label: string; format?: (value: unknown) => string; align?: "right" };
+type Column = {
+  field: string;
+  label: string;
+  format?: (value: unknown) => string;
+  align?: "right";
+  emptyLabel?: string;
+};
 
 const asDate = (value: unknown) => {
   const formatted = formatDateTime(String(value));
@@ -34,7 +40,7 @@ type QualityTableProps = {
 
 export function QualityTable({ report, hasLoadDate, demoIds }: QualityTableProps) {
   const columns = hasLoadDate
-    ? [...BASE_COLUMNS, { field: "fecha_carga", label: "Fecha de carga", format: asDate }]
+    ? [...BASE_COLUMNS, { field: "fecha_carga", label: "Fecha de carga", format: asDate, emptyLabel: "carga histórica" }]
     : BASE_COLUMNS;
 
   return (
@@ -101,7 +107,7 @@ export function QualityTable({ report, hasLoadDate, demoIds }: QualityTableProps
 
 function Cell({ value, column, issues }: { value: unknown; column: Column; issues: Issue[] }) {
   const failing = issues.length > 0;
-  const text = isEmpty(value) ? "vacío" : column.format ? column.format(value) : String(value);
+  const text = isEmpty(value) ? (column.emptyLabel ?? "vacío") : column.format ? column.format(value) : String(value);
   const reason = issues.map((issue) => `${DIMENSION_LABELS[issue.dimension]}: ${issue.message}`).join("\n");
 
   return (

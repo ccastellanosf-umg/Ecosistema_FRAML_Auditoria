@@ -1,5 +1,5 @@
 import type { RuleFailure } from "@/lib/quality/rules";
-import { DIMENSION_LABELS } from "./labels";
+import { DIMENSION_LABELS } from "@/lib/quality/labels";
 
 export function RuleFailures({ failures }: { failures: RuleFailure[] }) {
   return (

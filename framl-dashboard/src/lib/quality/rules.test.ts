@@ -39,6 +39,26 @@ describe("evaluateRow", () => {
     it("treats blank strings as missing", () => {
       expect(issuesOf({ ...validRow, canal_tx: "   " })).toEqual(["completeness:canal_tx"]);
     });
+
+    it.each(["App móvil", "Web"])("requires a device id for channel %s", (channel) => {
+      expect(issuesOf({ ...validRow, canal_tx: channel, id_dispositivo: null })).toEqual([
+        "completeness:id_dispositivo",
+      ]);
+    });
+
+    it("accepts a missing device id for the Cajero channel", () => {
+      expect(issuesOf({ ...validRow, canal_tx: "Cajero", id_dispositivo: null })).toEqual([]);
+    });
+
+    it("does not evaluate the device requirement when the channel is invalid", () => {
+      expect(issuesOf({ ...validRow, canal_tx: "Fax", id_dispositivo: null })).toEqual(["validity:canal_tx"]);
+    });
+
+    it("does not evaluate the device requirement when the channel is missing", () => {
+      expect(issuesOf({ ...validRow, canal_tx: null, id_dispositivo: null })).toEqual([
+        "completeness:canal_tx",
+      ]);
+    });
   });
 
   describe("validity", () => {
@@ -88,15 +108,26 @@ describe("evaluateRow", () => {
     });
   });
 
-  describe("timeliness", () => {
-    it("flags a transaction dated in the future", () => {
+  describe("transaction date validity", () => {
+    it("flags a transaction dated in the future when there is no load date", () => {
       expect(issuesOf({ ...validRow, fecha_hora_txn: "2026-10-10T12:00:00Z" })).toEqual([
-        "timeliness:fecha_hora_txn",
+        "validity:fecha_hora_txn",
       ]);
     });
 
     it("tolerates small clock differences", () => {
       expect(issuesOf({ ...validRow, fecha_hora_txn: "2026-10-09T12:03:00Z" })).toEqual([]);
+    });
+
+    it("flags a transaction dated after its load date", () => {
+      const row = { ...validRow, fecha_hora_txn: "2026-10-02T00:00:00Z", fecha_carga: "2026-10-01T00:00:00Z" };
+      expect(issuesOf(row)).toEqual(["validity:fecha_hora_txn"]);
+    });
+  });
+
+  describe("timeliness", () => {
+    it("does not evaluate historical records without a load date", () => {
+      expect(evaluateRow({ ...validRow, fecha_carga: null }, ctx())).toEqual([]);
     });
 
     it("flags a record loaded later than the allowed delay", () => {
@@ -107,11 +138,6 @@ describe("evaluateRow", () => {
     it("accepts a record loaded within the allowed delay", () => {
       const row = { ...validRow, fecha_hora_txn: "2026-10-01T00:00:00Z", fecha_carga: "2026-10-01T05:00:00Z" };
       expect(issuesOf(row)).toEqual([]);
-    });
-
-    it("flags a record loaded before the transaction happened", () => {
-      const row = { ...validRow, fecha_hora_txn: "2026-10-02T00:00:00Z", fecha_carga: "2026-10-01T00:00:00Z" };
-      expect(issuesOf(row)).toEqual(["timeliness:fecha_carga"]);
     });
   });
 
@@ -128,7 +154,12 @@ describe("evaluateQuality", () => {
         validRow,
         { ...validRow, id_transaccion: 2, canal_tx: null },
         { ...validRow, id_transaccion: 3, monto_txn: -1, fecha_hora_txn: "2030-01-01T00:00:00Z" },
-        { ...validRow, id_transaccion: 4 },
+        {
+          ...validRow,
+          id_transaccion: 4,
+          fecha_hora_txn: "2026-10-01T00:00:00Z",
+          fecha_carga: "2026-10-05T00:00:00Z",
+        },
       ],
       ctx(),
     );
@@ -138,22 +169,22 @@ describe("evaluateQuality", () => {
       { dimension: "validity", passed: 3, total: 4, rate: 0.75 },
       { dimension: "timeliness", passed: 3, total: 4, rate: 0.75 },
     ]);
-    expect(report.rowsWithIssues).toBe(2);
+    expect(report.rowsWithIssues).toBe(3);
     expect(report.rows[1].issues).toHaveLength(1);
   });
 
   it("counts failures per rule, most frequent first", () => {
     const report = evaluateQuality(
       [
-        { ...validRow, canal_tx: "Fax" },
-        { ...validRow, canal_tx: "Fax", monto_txn: 0 },
+        { ...validRow, id_transaccion: 7, canal_tx: "Fax" },
+        { ...validRow, id_transaccion: 8, canal_tx: "Fax", monto_txn: 0 },
       ],
       ctx(),
     );
 
     expect(report.failuresByRule).toEqual([
-      { dimension: "validity", message: "Canal no permitido", count: 2 },
-      { dimension: "validity", message: "El monto debe ser mayor que 0", count: 1 },
+      { dimension: "validity", message: "Canal no permitido", count: 2, rowIds: [7, 8] },
+      { dimension: "validity", message: "El monto debe ser mayor que 0", count: 1, rowIds: [8] },
     ]);
   });
 

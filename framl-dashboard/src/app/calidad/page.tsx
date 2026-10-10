@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { connection } from "next/server";
-import { fetchQualityData } from "@/lib/supabase/server";
-import { buildDemoRows } from "@/lib/quality/demo";
-import { evaluateQuality } from "@/lib/quality/rules";
+import { runQualityCheck, RULES_VERSION, type QualityRun } from "@/lib/quality/run";
+import { formatDateTime } from "@/components/dashboard/format";
 import { DimensionTile } from "@/components/quality/DimensionTile";
 import { QualityTable } from "@/components/quality/QualityTable";
 import { RuleFailures } from "@/components/quality/RuleFailures";
@@ -11,8 +10,6 @@ import { RuleFailures } from "@/components/quality/RuleFailures";
 export const metadata: Metadata = {
   title: "Calidad de datos · Dashboard FRAML",
 };
-
-const MAX_LOAD_DELAY_HOURS = 24;
 
 function Notice({ tone, children }: { tone: "info" | "warning" | "error"; children: React.ReactNode }) {
   const styles = {
@@ -27,7 +24,7 @@ function Notice({ tone, children }: { tone: "info" | "warning" | "error"; childr
 export default async function QualityPage({ searchParams }: PageProps<"/calidad">) {
   await connection();
   const demo = (await searchParams).demo === "1";
-  const result = await fetchQualityData();
+  const result = await runQualityCheck(demo);
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-10">
@@ -38,12 +35,22 @@ export default async function QualityPage({ searchParams }: PageProps<"/calidad"
             Evalúa cada transacción en tres dimensiones: completitud, validez y oportunidad.
           </p>
         </div>
-        <Link
-          href={demo ? "/calidad" : "/calidad?demo=1"}
-          className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-primary hover:bg-track"
-        >
-          {demo ? "Ver solo datos reales" : "Ver con errores de demostración"}
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={demo ? "/calidad" : "/calidad?demo=1"}
+            className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-primary hover:bg-track"
+          >
+            {demo ? "Ver solo datos reales" : "Ver con errores de demostración"}
+          </Link>
+          {/* Plain anchor: the CSV is a file download, not a page navigation. */}
+          <a
+            href={demo ? "/calidad/evidencia?demo=1" : "/calidad/evidencia"}
+            download
+            className="rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-primary hover:bg-track"
+          >
+            Descargar evidencia (CSV)
+          </a>
+        </div>
       </header>
 
       {result.status === "not-configured" && (
@@ -52,28 +59,21 @@ export default async function QualityPage({ searchParams }: PageProps<"/calidad"
       {result.status === "error" && (
         <Notice tone="error">No se pudieron cargar las transacciones: {result.detail}</Notice>
       )}
-      {result.status === "ok" && <QualityDashboard data={result} demo={demo} />}
+      {result.status === "ok" && <QualityDashboard run={result} demo={demo} />}
     </main>
   );
 }
 
-type QualityData = Extract<Awaited<ReturnType<typeof fetchQualityData>>, { status: "ok" }>;
+type QualityResult = Extract<QualityRun, { status: "ok" }>;
 
-function QualityDashboard({ data, demo }: { data: QualityData; demo: boolean }) {
-  const now = new Date();
-  const demoRows = demo ? buildDemoRows(now) : [];
-  const report = evaluateQuality([...data.rows, ...demoRows], {
-    now,
-    knownCustomerIds: data.knownCustomerIds,
-    maxLoadDelayHours: MAX_LOAD_DELAY_HOURS,
-  });
-  const demoIds = new Set(demoRows.map((row) => Number(row.id_transaccion)));
+function QualityDashboard({ run, demo }: { run: QualityResult; demo: boolean }) {
+  const { report, demoIds } = run;
 
   return (
     <>
       {demo && (
         <Notice tone="warning">
-          <strong className="font-medium">Modo demostración.</strong> Se agregaron {demoRows.length} registros
+          <strong className="font-medium">Modo demostración.</strong> Se agregaron {demoIds.size} registros
           sintéticos con errores inyectados (marcados como <em>demo</em>) para visualizar las reglas. No se
           escribió nada en la base de datos.
         </Notice>
@@ -87,19 +87,24 @@ function QualityDashboard({ data, demo }: { data: QualityData; demo: boolean }) 
 
       <RuleFailures failures={report.failuresByRule} />
 
-      <QualityTable report={report} hasLoadDate={data.hasLoadDate} demoIds={demoIds} />
+      <QualityTable report={report} hasLoadDate={run.hasLoadDate} demoIds={demoIds} />
 
-      {(!data.hasLoadDate || !data.knownCustomerIds) && (
+      <p className="text-xs text-muted">
+        Ejecución: {formatDateTime(run.executedAt.toISOString())} · Reglas versión {RULES_VERSION} ·{" "}
+        {report.rows.length} registros evaluados
+      </p>
+
+      {(!run.hasLoadDate || !run.customerCheck) && (
         <Notice tone="info">
           <p className="mb-1 font-medium text-primary">Reglas que todavía no se pueden verificar</p>
           <ul className="list-disc space-y-1 pl-5">
-            {!data.hasLoadDate && (
+            {!run.hasLoadDate && (
               <li>
-                <strong className="font-medium">Oportunidad de carga:</strong> la tabla no tiene la columna{" "}
-                <code>fecha_carga</code>. Solo se detectan fechas en el futuro.
+                <strong className="font-medium">Oportunidad:</strong> la tabla no tiene la columna{" "}
+                <code>fecha_carga</code>, por lo que no se evalúa el plazo de carga.
               </li>
             )}
-            {!data.knownCustomerIds && (
+            {!run.customerCheck && (
               <li>
                 <strong className="font-medium">Existencia del cliente:</strong> no hay acceso a la vista{" "}
                 <code>clientes_ids</code>, por lo que no se valida que el cliente exista en{" "}
