@@ -5,7 +5,7 @@ import { runQualityCheck, RULES_VERSION, type QualityRun } from "@/lib/quality/r
 import { formatDateTime } from "@/components/dashboard/format";
 import { DimensionTile } from "@/components/quality/DimensionTile";
 import { QualityTable } from "@/components/quality/QualityTable";
-import { RuleFailures } from "@/components/quality/RuleFailures";
+import { RuleResults } from "@/components/quality/RuleResults";
 
 export const metadata: Metadata = {
   title: "Calidad de datos · Dashboard FRAML",
@@ -32,7 +32,7 @@ export default async function QualityPage({ searchParams }: PageProps<"/calidad"
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-semibold tracking-tight text-primary">Tablero de calidad de datos</h1>
           <p className="text-sm text-secondary">
-            Evalúa cada transacción en tres dimensiones: completitud, validez y oportunidad.
+            Evalúa cada transacción con las reglas de las fichas del catálogo de datos críticos.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -79,13 +79,13 @@ function QualityDashboard({ run, demo }: { run: QualityResult; demo: boolean }) 
         </Notice>
       )}
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {report.dimensions.map((score) => (
-          <DimensionTile key={score.dimension} score={score} />
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {report.dimensions.map((result) => (
+          <DimensionTile key={result.dimension} result={result} />
         ))}
       </section>
 
-      <RuleFailures failures={report.failuresByRule} />
+      <RuleResults rules={report.rules} />
 
       <QualityTable report={report} hasLoadDate={run.hasLoadDate} demoIds={demoIds} />
 
@@ -94,26 +94,26 @@ function QualityDashboard({ run, demo }: { run: QualityResult; demo: boolean }) 
         {report.rows.length} registros evaluados
       </p>
 
-      {(!run.hasLoadDate || !run.customerCheck) && (
-        <Notice tone="info">
-          <p className="mb-1 font-medium text-primary">Reglas que todavía no se pueden verificar</p>
-          <ul className="list-disc space-y-1 pl-5">
-            {!run.hasLoadDate && (
-              <li>
-                <strong className="font-medium">Oportunidad:</strong> la tabla no tiene la columna{" "}
-                <code>fecha_carga</code>, por lo que no se evalúa el plazo de carga.
-              </li>
-            )}
-            {!run.customerCheck && (
-              <li>
-                <strong className="font-medium">Existencia del cliente:</strong> no hay acceso a la vista{" "}
-                <code>clientes_ids</code>, por lo que no se valida que el cliente exista en{" "}
-                <code>maestro_clientes</code>.
-              </li>
-            )}
-          </ul>
-        </Notice>
-      )}
+      <Notice tone="info">
+        <p className="mb-1 font-medium text-primary">Alcance de esta versión</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>
+            Los registros sin <code>fecha_carga</code> son carga histórica: FEC-03 no se evalúa sobre ellos y se
+            reporta como <em>No aplica</em>.
+          </li>
+          <li>
+            Una regla <em>No evaluable</em> nunca se reporta como cumplida; su motivo aparece en la tabla de reglas.
+          </li>
+          <li>
+            Fuera del tablero: CLI-03, ING-01 a ING-03 y las reglas de consistencia con el origen (MON-03, PAI-03,
+            CAN-03, DIS-03).
+          </li>
+          <li>
+            Pendiente de decisión del equipo: formato de cliente, país (código ISO) y canal (D-01 a D-03). Hoy se
+            validan con los valores que guarda la base de datos.
+          </li>
+        </ul>
+      </Notice>
     </>
   );
 }

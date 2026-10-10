@@ -1,4 +1,4 @@
-import { DIMENSION_LABELS } from "./labels";
+import { DIMENSION_LABELS, STATUS_LABELS } from "./labels";
 import type { QualityReport } from "./rules";
 
 export type EvidenceMeta = {
@@ -7,21 +7,21 @@ export type EvidenceMeta = {
   rulesVersion: string;
 };
 
-// Until per-rule thresholds are defined in the catalog (D-10), every rule must reach 100%.
-const THRESHOLD = "100%";
-
 const HEADER = [
   "fecha_ejecucion",
   "modo",
   "version_reglas",
   "nivel",
+  "regla_id",
   "dimension",
   "regla",
   "aplicables",
   "conformes",
   "fallidos",
+  "no_evaluables",
   "resultado",
   "umbral",
+  "motivo",
   "registros_afectados",
 ];
 
@@ -35,46 +35,50 @@ function escapeCell(value: string | number): string {
 }
 
 const toLine = (cells: (string | number)[]) => cells.map(escapeCell).join(",");
+const percent = (value: number) => `${Math.round(value * 100)}%`;
 
+// Common evidence record defined by the catalog: one line per rule and per dimension.
 export function buildEvidenceCsv(report: QualityReport, meta: EvidenceMeta): string {
-  const total = report.rows.length;
   const base = [meta.executedAt.toISOString(), meta.mode, meta.rulesVersion];
-  const result = (failed: number) => (failed === 0 ? "Cumple" : "No cumple");
 
-  const dimensionLines = report.dimensions.map((score) => {
+  const dimensionLines = report.dimensions.map((dimension) => {
     const failedIds = report.rows
-      .filter(({ issues }) => issues.some((issue) => issue.dimension === score.dimension))
+      .filter(({ issues }) => issues.some((issue) => issue.dimension === dimension.dimension))
       .map(({ row }) => Number(row.id_transaccion));
-    const failed = score.total - score.passed;
     return toLine([
       ...base,
       "dimension",
-      DIMENSION_LABELS[score.dimension],
+      "",
+      DIMENSION_LABELS[dimension.dimension],
       "(todas)",
-      score.total,
-      score.passed,
-      failed,
-      result(failed),
-      THRESHOLD,
+      dimension.total,
+      dimension.passed,
+      dimension.total - dimension.passed,
+      "",
+      STATUS_LABELS[dimension.status],
+      "",
+      "",
       failedIds.join(" "),
     ]);
   });
 
-  const ruleLines = report.failuresByRule.map((failure) => {
-    const affected = [...new Set(failure.rowIds)];
-    return toLine([
+  const ruleLines = report.rules.map((rule) =>
+    toLine([
       ...base,
       "regla",
-      DIMENSION_LABELS[failure.dimension],
-      failure.message,
-      total,
-      total - affected.length,
-      affected.length,
-      result(affected.length),
-      THRESHOLD,
-      affected.join(" "),
-    ]);
-  });
+      rule.id,
+      DIMENSION_LABELS[rule.dimension],
+      rule.description,
+      rule.applicable,
+      rule.passed,
+      rule.failed,
+      rule.notEvaluable,
+      STATUS_LABELS[rule.status],
+      percent(rule.threshold),
+      rule.reason ?? "",
+      rule.failedRowIds.join(" "),
+    ]),
+  );
 
   return `﻿${[toLine(HEADER), ...dimensionLines, ...ruleLines].join("\r\n")}\r\n`;
 }

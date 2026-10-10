@@ -108,7 +108,9 @@ export function QualityTable({ report, hasLoadDate, demoIds }: QualityTableProps
 function Cell({ value, column, issues }: { value: unknown; column: Column; issues: Issue[] }) {
   const failing = issues.length > 0;
   const text = isEmpty(value) ? (column.emptyLabel ?? "vacío") : column.format ? column.format(value) : String(value);
-  const reason = issues.map((issue) => `${DIMENSION_LABELS[issue.dimension]}: ${issue.message}`).join("\n");
+  const reason = issues
+    .map((issue) => `${issue.ruleId} · ${DIMENSION_LABELS[issue.dimension]}: ${issue.message}`)
+    .join("\n");
 
   return (
     <td

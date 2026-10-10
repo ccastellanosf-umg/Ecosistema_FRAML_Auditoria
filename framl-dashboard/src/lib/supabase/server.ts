@@ -24,7 +24,7 @@ export type QualityDataResult =
       status: "ok";
       rows: Record<string, unknown>[];
       hasLoadDate: boolean;
-      knownCustomerIds: Set<number> | null;
+      knownCustomerIds: Set<string> | null;
     }
   | NotConfigured
   | Failed;
@@ -87,8 +87,8 @@ export async function fetchQualityData(limit = 500): Promise<QualityDataResult> 
 }
 
 // The customer master is not readable with the public key; an ids-only view is.
-async function fetchCustomerIds(client: SupabaseClient): Promise<Set<number> | null> {
+async function fetchCustomerIds(client: SupabaseClient): Promise<Set<string> | null> {
   const { data, error } = await client.from(CUSTOMER_IDS_VIEW).select("id_cliente");
   if (error || !data) return null;
-  return new Set(data.map((row) => Number(row.id_cliente)));
+  return new Set(data.map((row) => String(row.id_cliente).trim()));
 }

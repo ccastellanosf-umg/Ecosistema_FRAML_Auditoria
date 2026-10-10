@@ -29,7 +29,7 @@ export function buildDemoRows(now: Date): Record<string, unknown>[] {
       fecha_hora_txn: daysFromNow(-1),
       pais_contraparte: "Narnia",
       canal_tx: "Fax",
-      id_dispositivo: "XYZ-123",
+      id_dispositivo: "dev mob 903",
     },
     {
       id_transaccion: 9004,
